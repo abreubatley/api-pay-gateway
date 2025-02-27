@@ -1,4 +1,4 @@
-const paymentService = require('../services/payment');
+const paymentService = require('../../pkg/services/payment');
 
 exports.getPayment = (req, res) => {
     //TODO: Make here getPayment procedure
