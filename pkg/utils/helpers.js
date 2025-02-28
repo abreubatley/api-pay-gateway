@@ -4,4 +4,8 @@ const isValidEnumValue = (value, enumObject) => {
 
 const listEnumValues = (enumObject) => Object.values(enumObject);
 
-module.exports = { isValidEnumValue, listEnumValues};
+const isValidAmount = (value) => {
+    return /^\d+(\.\d{1,2})?$/.test(value);
+}
+
+module.exports = { isValidEnumValue, listEnumValues, isValidAmount};
