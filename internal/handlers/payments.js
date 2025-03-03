@@ -1,32 +1,42 @@
 const paymentService = require('../services/payment');
-const {Payment} = require('../models/payment');
-
-exports.getPayment = (req, res) => {
-    //TODO: Make here getPayment procedure
-};
+const prisma = require("../prisma/prismaClient");
 
 exports.createPayment = async (req, res) => {
     try {
-        const { amount, currency, method } = req.paymentData;
+        const { amount, currency, method } = req.body;
 
         const payment = await paymentService.makePayment(amount, currency);
 
-        const paymentEntity = await Payment.create(
-            {
+        const newUser = await prisma.payment.create({
+            data: {
                 paymentGatewayId: payment.paymentId,
                 amount: amount,
                 currency: currency,
                 method: method,
-                status: payment.status
-            }
-        );
+                status: payment.status,
+            },
+        });
+        console.log('User created:', newUser);
 
-        res.status(201).json({paymentId: paymentEntity.paymentGatewayId, status: paymentEntity.status});
+        res.status(201).json({ id: paymentEntity.id, status: paymentEntity.status });
     } catch (error) {
         console.error(error.stack);
+        res.status(500).json({ error: 'internal server error', code: "INTERNAL_ERROR" });
+    }
+};
 
-        res.status(500).json(
-            { error: 'internal server error', code: "INTERNAL_ERROR"}
-        );
+exports.getPayment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const payment = await getPaymentById(id);
+
+        if (!payment) {
+            return res.status(404).json({ error: "Payment not found" });
+        }
+
+        res.status(200).json({ status: payment.status });
+    } catch (error) {
+        console.error(error.stack);
+        res.status(500).json({ error: 'internal server error', code: "INTERNAL_ERROR" });
     }
 };

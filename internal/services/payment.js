@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-exports.makePayment = async (amount, currency, method) => {
+exports.makePayment = async (amount, currency) => {
     try {
         const url = process.env.MOCK_URL
         if(!url) {

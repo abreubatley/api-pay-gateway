@@ -1,23 +1,36 @@
 const { PostgreSqlContainer } = require('@testcontainers/postgresql');
-const sequelize = require('../internal/config/database.js');
+const { setPrismaInstance } = require("../internal/prisma/prismaClient");
+const { PrismaClient } = require("@prisma/client");
 
 let container;
+let testPrisma;
 
 const setupTestDatabase = async () => {
     container = await new PostgreSqlContainer().start();
+    const connectionUri = container.getConnectionUri();
+    console.log("connectionUri retornado:", connectionUri);
 
-    process.env.DB_HOST = container.getHost();
-    process.env.DB_PORT = container.getPort();
-    process.env.DB_USER = container.getUsername();
-    process.env.DB_PASS = container.getPassword();
-    process.env.DB_NAME = container.getDatabase();
+    process.env.DATABASE_URL = connectionUri;
+    const testPrisma = new PrismaClient();
+    await testPrisma.$connect();
 
-    await sequelize.sync({ force: true });
+    setPrismaInstance(testPrisma);
+
+    await testPrisma.$executeRaw`SELECT pg_terminate_backend(pg_stat_activity.pid)
+                              FROM pg_stat_activity
+                              WHERE pg_stat_activity.datname = current_database()
+                                AND pid <> pg_backend_pid();`;
+
+    return { container, prisma: testPrisma };
 };
 
 const teardownTestDatabase = async () => {
-    await sequelize.close();
-    await container.stop();
+    if (testPrisma) {
+        await testPrisma.$disconnect();
+    }
+    if (container) {
+        await container.stop();
+    }
 };
 
 module.exports = { setupTestDatabase, teardownTestDatabase };
